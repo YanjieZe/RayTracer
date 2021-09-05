@@ -1,7 +1,17 @@
 
 class Vector3:
     """
-    Vector with 3 Dimensions, support basic arithmetic. 
+    Info: Vector with 3 Dimensions, support basic arithmetic. 
+
+    Usage: 
+    
+    Init: (x,y,z)
+    Func: +, add_equal, -, subtract_equal, negative,
+      /, divide_equal, length, length_square, multiply, multiply_equal,
+      dot, dot_equal, copy, unit_vector, cross
+
+    Subclass: Point3, Color
+
     """
     def __init__(self, x=0., y=0., z=0.):
         x:float
@@ -11,7 +21,7 @@ class Vector3:
         self.y = float(y)
         self.z = float(z)
     
-    def add(self, vec):
+    def __add__(self, vec):
         return Vector3(self.x + vec.x, self.y + vec.y, self.z+vec.z)
 
     def add_equal(self, vec):
@@ -21,7 +31,7 @@ class Vector3:
 
         return Vector3(self.x, self.y, self.z)
 
-    def subtract(self, vec):
+    def __sub__(self, vec):
         return Vector3(self.x - vec.x, self.y - vec.y, self.z - vec.z)
     
     def subtrace_equal(self, vec):
@@ -37,7 +47,7 @@ class Vector3:
     def __str__(self):
         return '(%.3f, %.3f, %.3f)'%(self.x, self.y, self.z)
 
-    def divide(self, constant):
+    def __truediv__(self, constant):
         return Vector3(self.x/constant, self.y/constant, self.z/constant)
 
     def divide_equal(self, constant):
@@ -76,9 +86,14 @@ class Vector3:
     def unit_vector(self):
         return Vector3(self.x/self.length(), self.y/self.length(), self.z/self.length())
 
+    def cross(self, vec):
+        return Vector3(self.y*vec.z - self.z*vec.y, self.z*vec.x - self.x*vec.z, self.x*vec.y-self.y*vec.x)
+
+        
 class Color(Vector3):
     def __init__(self, r=0., g=0., b=0.):
         super(Color, self).__init__(r,g,b)
+
 
 class Point3(Vector3):
     def __init__(self, x=0., y=0., z=0.):
