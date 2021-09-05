@@ -2,11 +2,13 @@ from hittable import HitRecord, Hittable
 from vector import Vector3, Point3, Color
 from ray import Ray
 import math
+from material import Material
 
 class Sphere(Hittable):
-    def __init__(self, cen:Point3, r:float):
+    def __init__(self, cen:Point3, r:float, m:Material):
         self.center = cen
         self.radius = r
+        self.material = m
 
     def hit(self, r:Ray, t_min:float, t_max:float, hit_record:HitRecord):
         """
@@ -14,10 +16,12 @@ class Sphere(Hittable):
 
         => delta = ...
         """
+        
         A = r.direction.dot(r.direction)
         B = (r.origin - self.center).dot(r.direction)*2
         C = (r.origin - self.center).dot(r.origin - self.center) - self.radius*self.radius
         delta = B*B - 4*A*C
+       
 
         if delta <0: # not hit
             return False 
@@ -34,4 +38,7 @@ class Sphere(Hittable):
         
         outward_normal = (hit_record.p - self.center)/self.radius
         hit_record.set_face_normal(r, outward_normal)
+        hit_record.material = self.material # record material
+
+
         return True

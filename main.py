@@ -9,16 +9,22 @@ from util import *
 from hittable import HittableList, Hittable, HitRecord
 from sphere import Sphere
 from camera import Camera
+from material import Metal, Lambertian, Material
 
 def ray_color(r: Ray, world:Hittable, depth:int):
 
     hit_record = HitRecord()
     if depth<=0:
         return Color(0, 0, 0)
-
+   
     if world.hit(r=r, t_min=0.001, t_max=infinity, hit_record=hit_record):
-        target = hit_record.p + hit_record.normal + random_in_hemisphere(hit_record.normal)
-        return  ray_color(Ray(hit_record.p, target-hit_record.p), world, depth-1).multiply(0.5)
+        scattered = Ray()
+        attenutation = Color()
+        
+        if hit_record.material.scatter(r, hit_record, attenutation, scattered):
+            # use the scattered
+            return attenutation.mul(ray_color(scattered, world, depth-1)) 
+        return  Color(0,0,0)
 
     unit_direction = r.direction.unit_vector()
 
@@ -49,8 +55,16 @@ class RayTracer:
         
         # World
         self.world = HittableList()
-        self.world.add(Sphere(cen=Point3(0,0,-1),r=0.5))
-        self.world.add(Sphere(cen=Point3(0,-100.5,-1), r=100)) 
+
+        material_ground = Lambertian(Color(0.8, 0.8, 0.0))
+        material_center = Lambertian(Color(0.7, 0.3, 0.3))
+        material_left = Metal(Color(0.8, 0.8, 0.8), fuzz=0.3)
+        material_right = Metal(Color(0.8, 0.6, 0.2), fuzz=1.0)
+
+        self.world.add(Sphere(cen=Point3(0,0,-1),r=0.5,m=material_center))
+        self.world.add(Sphere(cen=Point3(0,-100.5,-1), r=100,m=material_ground)) 
+        self.world.add(Sphere(cen=Point3(-1,0,-1), r=0.5,m=material_left)) 
+        self.world.add(Sphere(cen=Point3(1, 0,-1), r=0.5,m=material_right)) 
 
         # my test
         # self.world.add(Sphere(cen=Point3(0,0.2,-0.5),r=0.5))
@@ -108,9 +122,9 @@ class RayTracer:
         
 
 parser = argparse.ArgumentParser(description='Ray Tracer in Python')
-parser.add_argument('--img_width', type=int, default=300, help='Width of img')
-parser.add_argument('--sample', type=int, default=5, help='Num of samples per pixel')
-parser.add_argument('--recursion', type=int, default=10, help='Num of maximum recursion depth')
+parser.add_argument('--img_width', type=int, default=256, help='Width of img')
+parser.add_argument('--sample', type=int, default=10, help='Num of samples per pixel')
+parser.add_argument('--recursion', type=int, default=20, help='Num of maximum recursion depth')
 
 
 if __name__=='__main__':

@@ -1,5 +1,5 @@
 from util import *
-
+import math
 
 class Vector3:
     """
@@ -92,6 +92,8 @@ class Vector3:
     def cross(self, vec):
         return Vector3(self.y*vec.z - self.z*vec.y, self.z*vec.x - self.x*vec.z, self.x*vec.y-self.y*vec.x)
 
+    def mul(self, vec):
+        return Vector3(self.x*vec.x, self.y*vec.y, self.z*vec.z)
 
     @staticmethod
     def random(min=None, max=None):
@@ -100,6 +102,15 @@ class Vector3:
         else:
             return Vector3(random_float(min, max), random_float(min, max), random_float(min, max))
 
+    def near_zero(self):
+        s = 1e-8
+        return abs(self.x)<s and abs(self.y)<s and abs(self.z)<s
+
+    def copy(self, vec):
+        self.x = vec.x
+        self.y = vec.y
+        self.z = vec.z
+        
 
 def random_in_unit_sphere():
     """
@@ -125,6 +136,8 @@ def random_in_hemisphere(normal:Vector3):
     else:
         return in_unit_sphere.negative()
 
+def reflect(v:Vector3, n:Vector3):
+    return v - n.multiply(2*v.dot(n))
 
 class Color(Vector3):
     def __init__(self, r=0., g=0., b=0.):

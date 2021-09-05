@@ -8,6 +8,9 @@ class HitRecord:
         self.normal = normal
         self.t = t
         self.front_face = None
+
+        # material
+        self.material = None 
     
     def set_face_normal(self, r:Ray, outward_normal:Vector3):
         self.front_face = r.direction.dot(outward_normal) < 0
@@ -27,13 +30,14 @@ class HitRecord:
         self.normal = tmp_record.normal
         self.t = tmp_record.t
         self.front_face = tmp_record.front_face
+        self.material = tmp_record.material
 
 class Hittable:
     def __init__(self):
         pass
     
     def hit(self, r:Ray, t_min:float, t_max:float, hit_record:HitRecord):
-        raise NotImplementedError
+        raise NotImplementedError()
 
 
 class HittableList(Hittable):
