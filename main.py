@@ -1,7 +1,7 @@
 import numpy as np
 from PIL import Image,ImageOps
 from tqdm import tqdm
-from vector import Vector3, Point3, Color
+from vector import Vector3, Point3, Color, random_in_hemisphere
 from ray import Ray
 import argparse
 import math
@@ -10,12 +10,15 @@ from hittable import HittableList, Hittable, HitRecord
 from sphere import Sphere
 from camera import Camera
 
-def ray_color(r: Ray, world:Hittable):
+def ray_color(r: Ray, world:Hittable, depth:int):
 
     hit_record = HitRecord()
+    if depth<=0:
+        return Color(0, 0, 0)
 
-    if world.hit(r=r, t_min=0, t_max=infinity, hit_record=hit_record):
-        return (hit_record.normal + Color(1,1,1)).multiply(0.5)
+    if world.hit(r=r, t_min=0.001, t_max=infinity, hit_record=hit_record):
+        target = hit_record.p + hit_record.normal + random_in_hemisphere(hit_record.normal)
+        return  ray_color(Ray(hit_record.p, target-hit_record.p), world, depth-1).multiply(0.5)
 
     unit_direction = r.direction.unit_vector()
 
@@ -26,7 +29,9 @@ def ray_color(r: Ray, world:Hittable):
 
 
 class RayTracer:
-    def __init__(self, image_width=256, aspect_ratio=16.0/9.0, samples_per_pixel=10):
+    def __init__(self, image_width=256, aspect_ratio=16.0/9.0, 
+                samples_per_pixel=10,
+                max_depth=50):
 
         # Image
         self.image_width = int(image_width)
@@ -35,6 +40,7 @@ class RayTracer:
 
         self.image = np.zeros([self.image_width, self.image_height,3],dtype=np.uint8)
         
+        self.max_depth = max_depth
 
 
         # camera (coordinate)
@@ -62,6 +68,10 @@ class RayTracer:
         g *= scale
         b *= scale
 
+        r = math.sqrt(r)
+        g = math.sqrt(g)
+        b = math.sqrt(b)
+
         self.image[x][y][0] = int(255.99 * r)
         self.image[x][y][1] = int(255.99 * g)
         self.image[x][y][2] = int(255.99 * b)
@@ -85,7 +95,7 @@ class RayTracer:
                     v = float(j+random_float()) / (self.image_height-1)
 
                     r = self.camera.get_ray(u=u, v=v)
-                    pixel_color = pixel_color  + ray_color(r, self.world)
+                    pixel_color = pixel_color  + ray_color(r, self.world, self.max_depth)
 
                 self.write_color(x=i, y=j, color=pixel_color, samples_per_pixel=self.samples_per_pixel)
 
@@ -93,16 +103,20 @@ class RayTracer:
         
         img = Image.fromarray(self.image.transpose(1,0,2))
         img = ImageOps.flip(img)
-        # print(img)
         img.show()
         img.save('1.png')
         
 
 parser = argparse.ArgumentParser(description='Ray Tracer in Python')
-parser.add_argument('--sample', type=int, default=10, help='Num of samples per pixel')
+parser.add_argument('--img_width', type=int, default=300, help='Width of img')
+parser.add_argument('--sample', type=int, default=5, help='Num of samples per pixel')
+parser.add_argument('--recursion', type=int, default=10, help='Num of maximum recursion depth')
+
 
 if __name__=='__main__':
     args = parser.parse_args()
     print(args)
-    ray_tracer = RayTracer(samples_per_pixel=args.sample)
+    ray_tracer = RayTracer(image_width=args.img_width,
+                            samples_per_pixel=args.sample,
+                            max_depth=args.recursion)
     ray_tracer.render()

@@ -1,3 +1,5 @@
+from util import *
+
 
 class Vector3:
     """
@@ -86,10 +88,44 @@ class Vector3:
     def unit_vector(self):
         return Vector3(self.x/self.length(), self.y/self.length(), self.z/self.length())
 
+
     def cross(self, vec):
         return Vector3(self.y*vec.z - self.z*vec.y, self.z*vec.x - self.x*vec.z, self.x*vec.y-self.y*vec.x)
 
-        
+
+    @staticmethod
+    def random(min=None, max=None):
+        if min is None:
+            return Vector3(random_float(), random_float(), random_float())
+        else:
+            return Vector3(random_float(min, max), random_float(min, max), random_float(min, max))
+
+
+def random_in_unit_sphere():
+    """
+    Return a random vector in unit sphere
+    """
+    while(True):
+        p = Vector3.random(-1, 1)
+        if p.length_square() >= 1:
+            continue
+        return p
+
+def random_unit_vector():
+    """
+    Return a random unit vector
+    """
+    return random_in_unit_sphere().unit_vector()
+
+
+def random_in_hemisphere(normal:Vector3):
+    in_unit_sphere = random_in_unit_sphere()
+    if (in_unit_sphere.dot(normal)>0.0):
+        return in_unit_sphere
+    else:
+        return in_unit_sphere.negative()
+
+
 class Color(Vector3):
     def __init__(self, r=0., g=0., b=0.):
         super(Color, self).__init__(r,g,b)

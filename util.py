@@ -12,7 +12,8 @@ def degrees_to_radians(degrees:float):
 def random_float(min:float=None, max:float=None):
     if min is None:
         return random.random() # range from [0, 1)
-    return min + (max-min)*random.random()
+
+    return min + (max-min) * random.random()
 
 def clamp(x:float, min:float, max:float):
     if (x<min): 
