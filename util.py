@@ -9,11 +9,11 @@ def degrees_to_radians(degrees:float):
     return degrees * pi / 180.0
 
 
-def random_float(min:float=None, max:float=None):
-    if min is None:
+def random_float(min_val:float=None, max_val:float=None):
+    if min_val is None:
         return random.random() # range from [0, 1)
-
-    return min + (max-min) * random.random()
+    else:
+        return min_val + (max_val - min_val) * random.random()
 
 def clamp(x:float, min:float, max:float):
     if (x<min): 

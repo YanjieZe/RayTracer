@@ -158,6 +158,10 @@ class Point3(Vector3):
     def __init__(self, x=0., y=0., z=0.):
         super(Point3, self).__init__(x,y,z)
 
+def random_color(min_val=None, max_val=None):
+    if min_val is not None:
+        return Color(random_float(min_val, max_val), random_float(min_val, max_val), random_float(min_val, max_val))
+    return Color(random_float(), random_float(), random_float())
 
 if __name__=='__main__':
     vec1 = Point3(0,1,2)
