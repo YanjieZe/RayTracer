@@ -9,7 +9,7 @@ from util import *
 from hittable import HittableList, Hittable, HitRecord
 from sphere import Sphere
 from camera import Camera
-from material import Metal, Lambertian, Material
+from material import *
 
 def ray_color(r: Ray, world:Hittable, depth:int):
 
@@ -57,13 +57,14 @@ class RayTracer:
         self.world = HittableList()
 
         material_ground = Lambertian(Color(0.8, 0.8, 0.0))
-        material_center = Lambertian(Color(0.7, 0.3, 0.3))
-        material_left = Metal(Color(0.8, 0.8, 0.8), fuzz=0.3)
-        material_right = Metal(Color(0.8, 0.6, 0.2), fuzz=1.0)
+        material_center = Lambertian(Color(0.1,0.2,0.5))
+        material_left = Dielectric(ir=1.5)
+        material_right = Metal(Color(0.8, 0.6, 0.2), fuzz=0.0)
 
         self.world.add(Sphere(cen=Point3(0,0,-1),r=0.5,m=material_center))
         self.world.add(Sphere(cen=Point3(0,-100.5,-1), r=100,m=material_ground)) 
         self.world.add(Sphere(cen=Point3(-1,0,-1), r=0.5,m=material_left)) 
+        self.world.add(Sphere(cen=Point3(-1.0, 0.0, -1.0), r=-0.4, m=material_left))
         self.world.add(Sphere(cen=Point3(1, 0,-1), r=0.5,m=material_right)) 
 
         # my test
@@ -124,7 +125,7 @@ class RayTracer:
 parser = argparse.ArgumentParser(description='Ray Tracer in Python')
 parser.add_argument('--img_width', type=int, default=256, help='Width of img')
 parser.add_argument('--sample', type=int, default=10, help='Num of samples per pixel')
-parser.add_argument('--recursion', type=int, default=20, help='Num of maximum recursion depth')
+parser.add_argument('--recursion', type=int, default=50, help='Num of maximum recursion depth')
 
 
 if __name__=='__main__':

@@ -8,7 +8,10 @@ class Ray:
     def at(self, t:float):
         return self.origin +  self.direction.multiply(t)
     
-
+    def copy(self, r):
+        self.origin = r.origin
+        self.direction = r.direction
+        
 if __name__=='__main__':
     org = Point3(1,2,3)
     direc = Vector3(1,2,3)

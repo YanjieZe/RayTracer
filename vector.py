@@ -139,6 +139,16 @@ def random_in_hemisphere(normal:Vector3):
 def reflect(v:Vector3, n:Vector3):
     return v - n.multiply(2*v.dot(n))
 
+def refract(uv:Vector3, n:Vector3, etai_over_etat:float):
+    """
+    refraction
+    """ 
+    cos_theta = min(uv.negative().dot(n), 1.0)
+    r_out_perp = (uv + n.multiply(cos_theta)).multiply(etai_over_etat)
+    r_out_parallel = n.multiply(-math.sqrt(abs(1.0 - r_out_perp.length_square())))
+    return r_out_parallel + r_out_perp
+
+
 class Color(Vector3):
     def __init__(self, r=0., g=0., b=0.):
         super(Color, self).__init__(r,g,b)
