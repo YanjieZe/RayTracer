@@ -1,7 +1,11 @@
 # RayTracer in Python
-A Python Implementation of Ray Tracing In One Weekend.
+A Python Implementation of Ray Tracing in One Weekend.
 
+# Usage
+```
+python main.py --img_width 256 --sample 1 --recursion 20 --thread 16
+```
 
 # TODO list
-- [] Support Multithread.
+- [x] Support Multithread.
 - [] Use Taichi to accelerate.
