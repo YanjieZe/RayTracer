@@ -3,21 +3,25 @@ from ray import Ray
 from vector import Vector3, Color, Point3 , random_unit_vector, \
     reflect, random_in_unit_sphere, refract, random_float
 import math
+import taichi as ti
 
-
+@ti.data_oriented
 class Material:
     def __init__(self):
         pass
-
-    def scatter(self, r_in:Ray, hit_record:HitRecord, attenuation:Color, scattered:Ray):
+    
+    @ti.pyfunc
+    def scatter(self, r_in, hit_record, attenuation, scattered):
         raise NotImplementedError()
 
 
+@ti.data_oriented
 class Lambertian(Material):
-    def __init__(self, albedo:Color):
+    def __init__(self, albedo):
         self.albedo = albedo
     
-    def scatter(self, r_in:Ray, hit_record:HitRecord, attenuation:Color, scattered:Ray):
+    @ti.pyfunc
+    def scatter(self, r_in, hit_record, attenuation, scattered):
 
         scatter_direction = hit_record.normal + random_unit_vector()
 
@@ -32,12 +36,14 @@ class Lambertian(Material):
 
         return True
 
+@ti.data_oriented
 class Metal(Material):
     def __init__(self, albedo:Color , fuzz:float):
         self.albedo = albedo
         self.fuzz = fuzz if fuzz<1 else 1
     
-    def scatter(self, r_in:Ray, hit_record:HitRecord, attenuation:Color, scattered:Ray):
+    @ti.pyfunc
+    def scatter(self, r_in, hit_record, attenuation, scattered):
         reflected = reflect(r_in.direction.unit_vector(), hit_record.normal) # get the reflected vector
         
         scattered_new = Ray(hit_record.p, reflected + random_in_unit_sphere().multiply(self.fuzz))
@@ -49,11 +55,13 @@ class Metal(Material):
         
         return (scattered.direction.dot(hit_record.normal)>0)
 
+@ti.data_oriented
 class Dielectric(Material):
     def __init__(self, ir:float):
         self.ir = ir # index of refraction
     
-    def scatter(self, r_in:Ray, hit_record:HitRecord, attenuation:Color, scattered:Ray):
+    @ti.pyfunc
+    def scatter(self, r_in, hit_record, attenuation, scattered):
 
         attenuation.copy(Color(1,1,1))
 
@@ -73,7 +81,8 @@ class Dielectric(Material):
         scattered.copy(Ray(hit_record.p, direction))
         return True
     
-    def reflectance(self, cosine:float, ref_idx:float):
+    @ti.pyfunc
+    def reflectance(self, cosine, ref_idx):
         # Schlick's approximation
         r0 = (1-ref_idx) / (1+ref_idx)
         r0 = r0 * r0

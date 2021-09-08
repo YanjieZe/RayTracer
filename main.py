@@ -11,14 +11,16 @@ from sphere import Sphere
 from camera import Camera
 from material import *
 from threading import Thread
+import taichi
 
-def ray_color(r: Ray, world:Hittable, depth:int):
-
+@ti.pyfunc
+def ray_color(r, world, depth):
+    
     hit_record = HitRecord()
     if depth<=0:
         return Color(0, 0, 0)
    
-    if world.hit(r=r, t_min=0.001, t_max=infinity, hit_record=hit_record):
+    if world.hit(r, 0.001, infinity, hit_record):
         scattered = Ray()
         attenutation = Color()
         
@@ -29,38 +31,45 @@ def ray_color(r: Ray, world:Hittable, depth:int):
 
     unit_direction = r.direction.unit_vector()
 
-    t = 0.5 * (unit_direction.y + 1) # select color based on y value
+    t = 0.5 * (unit_direction.y[None] + 1) # select color based on y value
     
     return Color(1,1,1).multiply(1.0 - t) + Color(0.5, 0.7, 1.0).multiply(t)
+
 
 
 def random_scene():
     world = HittableList()
     ground_material = Lambertian(Color(0.5, 0.5, 0.5))
+    
     world.add(Sphere(Point3(0,-1000,0), 1000, ground_material))
 
-    for a in range(-11, 11):
-        for b in range(-11, 11):
+    # for a in range(-11, 11):
+    #     for b in range(-11, 11):
+    for a in range(0, 1):
+        for b in range(0, 1):
             choose_mat = random_float()
             center = Point3(a+0.9*random_float(), 0.2, b+0.9*random_float())
 
             if (center - Point3(4, 0.2, 0)).length() > 0.9:
                 if choose_mat < 0.8:
                     # diffuse
+                    # print('1')
                     albedo = random_color().mul(random_color())
                     sphere_material = Lambertian(albedo)
                     world.add(Sphere(center, 0.2, sphere_material))
                 elif choose_mat < 0.95:
                     # metal
+                    # print('2')
                     albedo = random_color(0.5, 0.1)
                     fuzz = random_float(0, 0.5)
                     sphere_material = Metal(albedo, fuzz)
                     world.add(Sphere(center, 0.2, sphere_material))
                 else:
+                    # print('3')
                     # glass
                     sphere_material = Dielectric(1.5)
                     world.add(Sphere(center, 0.2, sphere_material))
-
+    
     material1= Dielectric(1.5)
     world.add(Sphere(Point3(0,1,0), 1.0, material1))
 
@@ -73,6 +82,7 @@ def random_scene():
     return world
 
 
+@ti.data_oriented
 class RayTracer:
     def __init__(self, image_width=1200, aspect_ratio=3.0/2.0, 
                 samples_per_pixel=500,
@@ -83,13 +93,14 @@ class RayTracer:
         self.image_width = int(image_width)
         self.image_height = int(self.image_width/aspect_ratio)
         self.samples_per_pixel = samples_per_pixel
-
-        self.image = np.zeros([self.image_width, self.image_height,3],dtype=np.uint8)
+        
+        # self.image = np.zeros([self.image_width, self.image_height,3],dtype=np.uint8)
+        self.image = ti.field(dtype=ti.f32, shape=(self.image_width, self.image_height,3))
         
         self.max_depth = max_depth
 
         self.num_thread = num_thread
-        
+
         # World
         self.world = random_scene()
 
@@ -102,16 +113,16 @@ class RayTracer:
         aperture = 0.1
         self.camera = Camera(lookfrom=lookfrom, lookat=lookat, vup=Vector3(0,1,0), vfov=20,\
              aspect_ratio=aspect_ratio, aperture=aperture, focus_dist=dist_to_focus)
-    
+        print('Camera Created.')
 
-
-    def write_color(self, x:int, y:int, color:Color, samples_per_pixel:int):
+    @ti.pyfunc
+    def write_color(self, x, y, color, samples_per_pixel):
 
         scale = 1.0/samples_per_pixel
 
-        r = color.x
-        g = color.y
-        b = color.z
+        r = color.x[None]
+        g = color.y[None]
+        b = color.z[None]
         r *= scale
         g *= scale
         b *= scale
@@ -120,15 +131,15 @@ class RayTracer:
         g = math.sqrt(g)
         b = math.sqrt(b)
 
-        self.image[x][y][0] = int(255.99 * r)
-        self.image[x][y][1] = int(255.99 * g)
-        self.image[x][y][2] = int(255.99 * b)
+        self.image[x,y,0] = int(255.99 * r)
+        self.image[x,y,1] = int(255.99 * g)
+        self.image[x,y,2] = int(255.99 * b)
 
         # self.image[x][y][0] = int(255.99 * clamp(r, 0.0, 1))
         # self.image[x][y][1] = int(255.99 * clamp(r, 0.0, 0.999))
         # self.image[x][y][2] = int(255.99 * clamp(r, 0.0, 0.999))
 
-
+    @ti.pyfunc
     def render_for_one_thread(self, i, j):
         pixel_color = Color(0., 0., 0.)
         for k in range(self.samples_per_pixel):
@@ -137,33 +148,47 @@ class RayTracer:
             u = float(i+random_float()) / (self.image_width-1)
             v = float(j+random_float()) / (self.image_height-1)
 
-            r = self.camera.get_ray(u=u, v=v)
+            r = self.camera.get_ray(u, v)
             pixel_color = pixel_color  + ray_color(r, self.world, self.max_depth)
 
-        self.write_color(x=i, y=j, color=pixel_color, samples_per_pixel=self.samples_per_pixel)
+        self.write_color(i, j, pixel_color, self.samples_per_pixel)
 
+    @ti.pyfunc
     def render(self):
 
-        for i in tqdm(range(self.image_width), desc='Render Progress'):
+        for i in tqdm(range(self.image_width),desc='Progress'):
             int_image_height = (int(self.image_height/self.num_thread))*self.num_thread
             for j in range(0, int_image_height, self.num_thread):
-                thread_list = []
-                for t in range(self.num_thread):
-                    thread_list.append(Thread(target=self.render_for_one_thread, args=(i,j+t)))
 
-                for t in range(self.num_thread):
-                    thread_list[t].start()
+                pixel_color = Color(0., 0., 0.)
+                for k in range(self.samples_per_pixel):
 
-                for t in range(self.num_thread):
-                    thread_list[t].join()
+                    # by inject random noise, multiple sampling
+                    u = float(i+random_float()) / (self.image_width-1)
+                    v = float(j+random_float()) / (self.image_height-1)
+                    
+                    r = self.camera.get_ray(u, v)
+                    pixel_color = pixel_color  + ray_color(r, self.world, self.max_depth)
+
+                self.write_color(i, j, pixel_color, self.samples_per_pixel)
+                
+                # thread_list = []
+                # for t in range(self.num_thread):
+                #     thread_list.append(Thread(target=self.render_for_one_thread, args=(i,j+t)))
+
+                # for t in range(self.num_thread):
+                #     thread_list[t].start()
+
+                # for t in range(self.num_thread):
+                #     thread_list[t].join()
 
             # remaining
-            for j in range(int_image_height, self.image_height):
-                self.render_for_one_thread(i, j)
+            # for j in range(int_image_height, self.image_height):
+            #     self.render_for_one_thread(i, j)
 
                 
         
-        img = Image.fromarray(self.image.transpose(1,0,2))
+        img = Image.fromarray(self.image.to_numpy().transpose(1,0,2))
         img = ImageOps.flip(img)
         img.show()
         img.save('1.png')
@@ -176,6 +201,7 @@ parser.add_argument('--recursion', type=int, default=5, help='Num of maximum rec
 parser.add_argument('--thread', default=16, type=int, help='Num of threads')
 
 if __name__=='__main__':
+    ti.init(debug=True)
     args = parser.parse_args()
     print(args)
     ray_tracer = RayTracer(image_width=args.img_width,

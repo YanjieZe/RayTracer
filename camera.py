@@ -2,12 +2,16 @@ from util import *
 from vector import Point3, Vector3, Color, degrees_to_radians, random_in_unit_sphere
 from ray import Ray
 import math
+import taichi as ti
 
-
+@ti.data_oriented
 class Camera:
     def __init__(self, lookfrom:Point3, lookat:Point3, vup:Vector3, vfov:float,\
              aspect_ratio:float, aperture:float, focus_dist:float):
+
         self.theta = degrees_to_radians(vfov)
+
+
         self.h = math.tan(self.theta/2)
 
         self.aspect_ratio = aspect_ratio
@@ -34,12 +38,15 @@ class Camera:
         self.lens_radius = aperture/2
 
 
-    def get_ray(self, u:float, v:float):
+    @ti.pyfunc
+    def get_ray(self, u, v):
         """
         Given the pixel coordinate in image, return the ray from the camera to the pixel
         """
+        
         rd = random_in_unit_sphere().multiply(self.lens_radius)
-        offset = self.u.multiply(rd.x) + self.v.multiply(rd.y)
+        offset = self.u.multiply(rd.x[None]) + self.v.multiply(rd.y[None])
 
         return Ray(self.origin+offset, \
             self.lower_left_corner + self.horizontal.multiply(u) + self.vertical.multiply(v)-self.origin-offset)
+

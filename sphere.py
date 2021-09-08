@@ -3,14 +3,17 @@ from vector import Vector3, Point3, Color
 from ray import Ray
 import math
 from material import Material
+import taichi as ti
 
+@ti.data_oriented
 class Sphere(Hittable):
     def __init__(self, cen:Point3, r:float, m:Material):
         self.center = cen
         self.radius = r
         self.material = m
 
-    def hit(self, r:Ray, t_min:float, t_max:float, hit_record:HitRecord):
+    @ti.pyfunc
+    def hit(self, r, t_min, t_max, hit_record):
         """
         (A+tB-C)*(A+tB-C)=r^2
 
